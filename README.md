@@ -1,10 +1,11 @@
 # KBG Turf Risk
 
-A custom Home Assistant integration that computes **Growing Degree Days**
-and two published turf disease risk models — **entirely from sensors you
-already have in HA** (e.g. your Ecowitt integration's outdoor temperature
-and humidity entities). No WeeWX/InfluxDB/Grafana stack, no Syngenta
-GreenCast subscription required.
+A custom Home Assistant integration that computes **Growing Degree Days**,
+several turf disease risk models, an irrigation deficit indicator, and a
+chinch bug pressure indicator — **entirely from sensors you already have in
+HA** (e.g. your Ecowitt integration's outdoor temperature, humidity,
+rainfall, and soil moisture entities). No WeeWX/InfluxDB/Grafana stack, no
+Syngenta GreenCast subscription required.
 
 ## What it computes
 
@@ -14,8 +15,20 @@ GreenCast subscription required.
 | `sensor.kbg_turf_risk_gdd_today_in_progress` | Today's GDD so far, updates live as new samples arrive |
 | `sensor.kbg_turf_risk_dollar_spot_risk` | 0-100% probability from the **Smith-Kerns model** (Smith & Kerns, 2018, *PLOS ONE*) |
 | `sensor.kbg_turf_risk_pythium_blight_risk_hours_today` | Hours today meeting the Pythium risk window |
+| `sensor.kbg_turf_risk_brown_patch_risk_hours_today` | Hours today meeting the Brown Patch (*Rhizoctonia solani*) sustained warm/humid threshold |
+| `sensor.kbg_turf_risk_fusarium_patch_risk_hours_today` | Hours today meeting the Fusarium/Microdochium Patch sustained cool/wet threshold |
+| `sensor.kbg_turf_risk_red_thread_risk_hours_today` | Hours today meeting the Red Thread sustained mild/wet threshold |
+| `sensor.kbg_turf_risk_chinch_bug_pressure_consecutive_hot_dry_days` | Consecutive hot (and dry, if a rain sensor is configured) days |
+| `sensor.kbg_turf_risk_irrigation_deficit_7_day` | *(requires a rain sensor)* Inches still needed this week to hit the cool-season watering target |
+| `sensor.kbg_turf_risk_soil_moisture` | *(requires a soil moisture sensor)* Passthrough of your configured soil moisture entity |
 | `binary_sensor.kbg_turf_risk_dollar_spot_action_threshold_exceeded` | On when Dollar Spot risk >= 20% (the model's published action threshold) |
 | `binary_sensor.kbg_turf_risk_pythium_blight_high_risk` | On when the Pythium criteria were met on the most recently completed day |
+| `binary_sensor.kbg_turf_risk_brown_patch_high_risk` | On when the Brown Patch criteria were met on the most recently completed day |
+| `binary_sensor.kbg_turf_risk_fusarium_patch_high_risk` | On when the Fusarium Patch criteria were met on the most recently completed day |
+| `binary_sensor.kbg_turf_risk_red_thread_high_risk` | On when the Red Thread criteria were met on the most recently completed day |
+| `binary_sensor.kbg_turf_risk_chinch_bug_elevated_pressure` | On after 5+ consecutive hot/dry days |
+| `binary_sensor.kbg_turf_risk_irrigation_needed` | *(requires a rain sensor)* On when the 7-day rainfall total is below the target |
+| `binary_sensor.kbg_turf_risk_soil_moisture_low` | *(requires a soil moisture sensor)* On when soil moisture is below the configured threshold |
 
 ## The models, and why they're implemented this way
 
@@ -53,15 +66,56 @@ Dollar Spot — the risk hours sensor tells you how close you got; the binary
 sensor tells you whether the full criteria were met on the last completed
 day.
 
+**Brown Patch, Fusarium/Microdochium Patch, Red Thread** — these three
+fungal diseases don't have a single published logistic model the way Dollar
+Spot does, so they're modeled the same way as Pythium: a sustained-hours
+threshold within a temperature band, drawn from standard turf pathology
+extension guidance rather than a specific peer-reviewed paper.
+
+- **Brown Patch** (*Rhizoctonia solani*): temp >= 20C (68F) with >= 10
+  cumulative hours/day of RH >= 95%. Favors warm, humid nights.
+- **Fusarium/Microdochium Patch** (*Microdochium nivale*): temp between
+  0-15C (32-59F) with >= 10 cumulative hours/day of RH >= 90%. The opposite
+  end of the temperature range from Pythium/Brown Patch — common in cool,
+  wet spring/fall/winter conditions.
+- **Red Thread** (*Laetisaria fuciformis*): temp between 15-25C (59-77F)
+  with >= 12 cumulative hours/day of RH >= 90%. Note: Red Thread is also
+  strongly favored by low nitrogen fertility, which isn't modeled here —
+  treat this as the weather half of the picture, not the whole risk.
+
+**Chinch Bug Pressure** (hairy chinch bug, *Blissus* spp.) — not a disease,
+but the other major weather-driven cool-season KBG pest: activity and
+damage increase on hot, dry, drought-stressed turf. Modeled as consecutive
+days where max temp exceeds 29.4C (85F); if a rain sensor is configured, a
+day only counts toward the streak if it was also dry (< 2mm/~0.08in of
+rain that day). Flags elevated pressure at 5+ consecutive qualifying days.
+
+**Irrigation Deficit** *(requires a rain sensor)* — sums your rain sensor's
+daily totals over the trailing 7 days and compares against a configurable
+weekly target (default 1.25in), following the standard cool-season turf
+extension guidance of ~1-1.5in/week from rain + irrigation combined
+(e.g. Purdue, Rutgers NJAES, and University of Illinois Extension lawn
+watering guides). Positive = shortfall, negative = surplus. Point your rain
+sensor at whatever entity mirrors Ecowitt's own "rain day" total (already
+resets at local midnight) — this integration reads that value at rollover
+rather than re-integrating a rain rate itself.
+
+**Soil Moisture** *(requires a soil moisture sensor)* — direct passthrough
+of a configured Ecowitt soil moisture entity (e.g. a WH51 probe), plus a
+configurable low-moisture threshold (default 25%) for the binary sensor.
+
 ## Install (HACS custom repository)
 
 1. HACS -> the three-dot menu (top right) -> Custom repositories
 2. Add this repo URL, category: Integration
 3. Search for "KBG Turf Risk" in HACS, install, restart Home Assistant
 4. Settings -> Devices & Services -> Add Integration -> "KBG Turf Risk"
-5. Pick your existing Ecowitt outdoor temperature sensor and outdoor
-   humidity sensor entities, set your GDD base temp (default 32F is
-   correct for cool-season KBG), and submit
+5. Pick your existing Ecowitt outdoor temperature and outdoor humidity
+   sensor entities (required), optionally a rainfall entity (enables the
+   irrigation deficit sensor) and a soil moisture entity (enables the soil
+   moisture sensors), set your GDD base temp (default 32F is correct for
+   cool-season KBG), irrigation target, and soil moisture low threshold,
+   and submit
 
 ## Important operational notes
 

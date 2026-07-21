@@ -16,12 +16,19 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     manager: TurfRiskManager = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
-        [
-            PythiumHighRiskBinarySensor(manager, entry),
-            DollarSpotActionThresholdBinarySensor(manager, entry),
-        ]
-    )
+    entities = [
+        PythiumHighRiskBinarySensor(manager, entry),
+        DollarSpotActionThresholdBinarySensor(manager, entry),
+        BrownPatchHighRiskBinarySensor(manager, entry),
+        FusariumPatchHighRiskBinarySensor(manager, entry),
+        RedThreadHighRiskBinarySensor(manager, entry),
+        ChinchBugElevatedPressureBinarySensor(manager, entry),
+    ]
+    if manager.rain_entity:
+        entities.append(IrrigationNeededBinarySensor(manager, entry))
+    if manager.soil_moisture_entity:
+        entities.append(SoilMoistureLowBinarySensor(manager, entry))
+    async_add_entities(entities)
 
 
 class _BaseTurfBinarySensor(BinarySensorEntity):
@@ -78,3 +85,82 @@ class DollarSpotActionThresholdBinarySensor(_BaseTurfBinarySensor):
         if not self._manager.dollar_spot_valid or risk is None:
             return False
         return risk >= DOLLAR_SPOT_ACTION_THRESHOLD
+
+
+class BrownPatchHighRiskBinarySensor(_BaseTurfBinarySensor):
+    _attr_name = "Brown Patch High Risk"
+    _attr_icon = "mdi:alert-circle-outline"
+
+    def __init__(self, manager, entry):
+        super().__init__(manager, entry)
+        self._attr_unique_id = f"{entry.entry_id}_brown_patch_high_risk"
+
+    @property
+    def is_on(self) -> bool:
+        return self._manager.brown_patch_high_risk
+
+
+class FusariumPatchHighRiskBinarySensor(_BaseTurfBinarySensor):
+    _attr_name = "Fusarium Patch High Risk"
+    _attr_icon = "mdi:alert-circle-outline"
+
+    def __init__(self, manager, entry):
+        super().__init__(manager, entry)
+        self._attr_unique_id = f"{entry.entry_id}_fusarium_patch_high_risk"
+
+    @property
+    def is_on(self) -> bool:
+        return self._manager.fusarium_patch_high_risk
+
+
+class RedThreadHighRiskBinarySensor(_BaseTurfBinarySensor):
+    _attr_name = "Red Thread High Risk"
+    _attr_icon = "mdi:alert-circle-outline"
+
+    def __init__(self, manager, entry):
+        super().__init__(manager, entry)
+        self._attr_unique_id = f"{entry.entry_id}_red_thread_high_risk"
+
+    @property
+    def is_on(self) -> bool:
+        return self._manager.red_thread_high_risk
+
+
+class ChinchBugElevatedPressureBinarySensor(_BaseTurfBinarySensor):
+    _attr_name = "Chinch Bug Elevated Pressure"
+    _attr_icon = "mdi:bug-outline"
+
+    def __init__(self, manager, entry):
+        super().__init__(manager, entry)
+        self._attr_unique_id = f"{entry.entry_id}_chinch_bug_elevated_pressure"
+
+    @property
+    def is_on(self) -> bool:
+        return self._manager.chinch_bug_elevated_pressure
+
+
+class IrrigationNeededBinarySensor(_BaseTurfBinarySensor):
+    _attr_name = "Irrigation Needed"
+    _attr_icon = "mdi:sprinkler-variant"
+
+    def __init__(self, manager, entry):
+        super().__init__(manager, entry)
+        self._attr_unique_id = f"{entry.entry_id}_irrigation_needed"
+
+    @property
+    def is_on(self) -> bool:
+        deficit = self._manager.irrigation_deficit_in
+        return deficit is not None and deficit > 0
+
+
+class SoilMoistureLowBinarySensor(_BaseTurfBinarySensor):
+    _attr_name = "Soil Moisture Low"
+    _attr_icon = "mdi:water-alert-outline"
+
+    def __init__(self, manager, entry):
+        super().__init__(manager, entry)
+        self._attr_unique_id = f"{entry.entry_id}_soil_moisture_low"
+
+    @property
+    def is_on(self) -> bool:
+        return self._manager.soil_moisture_low

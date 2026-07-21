@@ -11,8 +11,14 @@ from .const import (
     DOMAIN,
     CONF_TEMP_SENSOR,
     CONF_HUMIDITY_SENSOR,
+    CONF_RAIN_SENSOR,
+    CONF_SOIL_MOISTURE_SENSOR,
     CONF_GDD_BASE_F,
+    CONF_IRRIGATION_TARGET_IN,
+    CONF_SOIL_MOISTURE_LOW_PCT,
     DEFAULT_GDD_BASE_F,
+    DEFAULT_IRRIGATION_TARGET_IN,
+    DEFAULT_SOIL_MOISTURE_LOW_PCT,
 )
 from .manager import TurfRiskManager
 
@@ -32,6 +38,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         temp_entity=entry.data[CONF_TEMP_SENSOR],
         humidity_entity=entry.data[CONF_HUMIDITY_SENSOR],
         gdd_base_f=entry.data.get(CONF_GDD_BASE_F, DEFAULT_GDD_BASE_F),
+        rain_entity=entry.data.get(CONF_RAIN_SENSOR),
+        soil_moisture_entity=entry.data.get(CONF_SOIL_MOISTURE_SENSOR),
+        irrigation_target_in=entry.data.get(CONF_IRRIGATION_TARGET_IN, DEFAULT_IRRIGATION_TARGET_IN),
+        soil_moisture_low_pct=entry.data.get(CONF_SOIL_MOISTURE_LOW_PCT, DEFAULT_SOIL_MOISTURE_LOW_PCT),
     )
     await manager.async_setup()
     hass.data[DOMAIN][entry.entry_id] = manager

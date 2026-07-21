@@ -13,9 +13,15 @@ from .const import (
     CONF_NAME,
     CONF_TEMP_SENSOR,
     CONF_HUMIDITY_SENSOR,
+    CONF_RAIN_SENSOR,
+    CONF_SOIL_MOISTURE_SENSOR,
     CONF_GDD_BASE_F,
+    CONF_IRRIGATION_TARGET_IN,
+    CONF_SOIL_MOISTURE_LOW_PCT,
     DEFAULT_NAME,
     DEFAULT_GDD_BASE_F,
+    DEFAULT_IRRIGATION_TARGET_IN,
+    DEFAULT_SOIL_MOISTURE_LOW_PCT,
 )
 
 
@@ -39,7 +45,19 @@ class KbgTurfRiskConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_HUMIDITY_SENSOR): selector.selector(
                     {"entity": {"domain": "sensor", "device_class": "humidity"}}
                 ),
+                vol.Optional(CONF_RAIN_SENSOR): selector.selector(
+                    {"entity": {"domain": "sensor", "device_class": "precipitation"}}
+                ),
+                vol.Optional(CONF_SOIL_MOISTURE_SENSOR): selector.selector(
+                    {"entity": {"domain": "sensor", "device_class": "moisture"}}
+                ),
                 vol.Required(CONF_GDD_BASE_F, default=DEFAULT_GDD_BASE_F): vol.Coerce(float),
+                vol.Required(
+                    CONF_IRRIGATION_TARGET_IN, default=DEFAULT_IRRIGATION_TARGET_IN
+                ): vol.Coerce(float),
+                vol.Required(
+                    CONF_SOIL_MOISTURE_LOW_PCT, default=DEFAULT_SOIL_MOISTURE_LOW_PCT
+                ): vol.Coerce(float),
             }
         )
         return self.async_show_form(step_id="user", data_schema=data_schema, errors=errors)
