@@ -1,0 +1,12 @@
+{
+  "domain": "kbg_turf_risk",
+  "name": "KBG Turf Risk (GDD + Disease Models)",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/PrincepsCivitatis/kbg_turf_risk",
+  "integration_type": "helper",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/PrincepsCivitatis/kbg_turf_risk/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

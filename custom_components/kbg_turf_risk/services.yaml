@@ -1,0 +1,15 @@
+reset_gdd:
+  name: Reset GDD
+  description: >
+    Resets the cumulative Growing Degree Day counter to zero. Call this after
+    a PGR application, at spring green-up, or at whatever point your GDD
+    tracking should restart from.
+  fields:
+    entry_id:
+      name: Entry ID
+      description: >
+        Config entry ID of the KBG Turf Risk instance to reset. Optional if
+        you only have one instance configured.
+      required: false
+      selector:
+        text:
